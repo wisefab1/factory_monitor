@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Machine Report — 17.02.2026 17:10</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:15px}
+
+  /* ── Header ── */
+  .header{background:#1a1a2e;color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .header h1{font-size:1.2rem;font-weight:600}
+  .header .meta{font-size:.8rem;opacity:.7;text-align:right}
+
+  /* ── Layout ── */
+  .container{max-width:1100px;margin:16px auto;padding:0 12px}
+
+  /* ── Machine card ── */
+  .machine-card{background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden}
+  .machine-header{background:#1e293b;color:white;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .machine-title{display:flex;flex-direction:column;gap:2px}
+  .machine-id{font-size:1.1rem;font-weight:700}
+  .machine-full{font-size:.7rem;opacity:.6;word-break:break-all}
+  .eff-badge{padding:5px 12px;border-radius:20px;font-weight:600;font-size:.85rem;color:white;white-space:nowrap}
+  .eff-detail{font-size:.72rem;font-weight:400;opacity:.85;margin-left:4px}
+
+  /* ── Section title ── */
+  .section-title{padding:10px 16px 5px;font-weight:600;font-size:.8rem;color:#475569;border-top:1px solid #f1f5f9;text-transform:uppercase;letter-spacing:.03em}
+
+  /* ── Tables (desktop) ── */
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  th{background:#f8fafc;padding:8px 12px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+  td{padding:8px 12px;border-bottom:1px solid #f1f5f9;word-break:break-word}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#f8fafc}
+
+  /* ── Scrollable tables ── */
+  .scroll-table-wrap{width:100%;border-bottom:1px solid #e2e8f0}
+  .scroll-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.85rem}
+  .scroll-table th,.scroll-table td{padding:8px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .scroll-table thead th{background:#f8fafc;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:1}
+  .scroll-table tbody tr:last-child td{border-bottom:none}
+  .scroll-table tbody tr:hover td{background:#f8fafc}
+  .scroll-tbody-wrap{overflow-y:auto;display:block}
+  .scroll-tbody-wrap::-webkit-scrollbar{width:5px}
+  .scroll-tbody-wrap::-webkit-scrollbar-track{background:#f1f5f9}
+  .scroll-tbody-wrap::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+
+  /* ── Timeline ── */
+  .tl-wrap{overflow:hidden!important;border-radius:4px}
+  .tl-ticks{position:relative;height:18px}
+  .tl-tick{position:absolute;font-size:9px;color:#94a3b8;transform:translateX(-50%)}
+
+  /* ── Legend ── */
+  .legend{display:flex;gap:14px;padding:4px 16px 10px;font-size:.78rem;flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:4px}
+  .dot{width:11px;height:11px;border-radius:2px;display:inline-block;flex-shrink:0}
+
+  /* ── Misc ── */
+  .badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.72rem;font-weight:600;margin-left:3px}
+  .badge.ongoing{background:#dbeafe;color:#1d4ed8}
+  .empty{padding:12px 16px;color:#94a3b8;font-style:italic;font-size:.85rem}
+  .footer{text-align:center;color:#94a3b8;font-size:.75rem;padding:16px;word-break:break-all}
+
+  /* ── Tooltip ── */
+  #tl-tooltip{
+    position:fixed;pointer-events:none;z-index:9999;
+    background:#1e293b;color:white;
+    padding:6px 10px;border-radius:6px;font-size:.78rem;
+    box-shadow:0 4px 12px rgba(0,0,0,.3);
+    display:none;max-width:240px;white-space:normal;line-height:1.4
+  }
+
+  /* ── Highlight ── */
+  .tl-seg.dim{opacity:.25}
+  .tl-seg.highlight{filter:brightness(1.25);outline:2px solid white;z-index:2;position:relative}
+  .tl-row.highlight td{background:#fef9c3!important}
+  .tl-row:hover td{background:#f0f9ff!important}
+
+  /* ══════════════════════════════════════════
+     MOBILE  ≤ 600px
+  ══════════════════════════════════════════ */
+  @media(max-width:600px){
+    body{font-size:14px}
+    .header{padding:12px 14px}
+    .header h1{font-size:1rem}
+    .container{padding:0 8px;margin:10px auto}
+    .machine-card{border-radius:8px;margin-bottom:14px}
+    .machine-header{padding:12px 12px}
+    .machine-id{font-size:1rem}
+    .eff-badge{font-size:.78rem;padding:4px 10px}
+    .eff-detail{display:none}          /* прибираємо (x/y min) на малих екранах */
+    .section-title{padding:8px 12px 4px;font-size:.75rem}
+
+    /* Таблиці — горизонтальний скрол замість truncate */
+    .table-scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table,.scroll-table{font-size:.78rem;min-width:360px}
+    th,td,.scroll-table th,.scroll-table td{padding:7px 9px}
+
+    /* Timeline — тікі тільки кожні 30 хв */
+    .tl-tick-15{display:none}
+    .tl-ticks{height:16px}
+    .tl-tick{font-size:8px}
+
+    /* Tooltip — завжди знизу екрану на mobile */
+    #tl-tooltip{
+      position:fixed;bottom:12px;left:50%;transform:translateX(-50%);
+      top:auto!important;max-width:92vw;text-align:center
+    }
+
+    .legend{padding:4px 12px 8px;font-size:.74rem;gap:10px}
+    .footer{font-size:.7rem;padding:12px}
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📊 Machine Report</h1>
+  <div class="meta">Period: 16:09 – 17:09<br>Generated: 17.02.2026 17:10</div>
+</div>
+<div class="container">
+  <div class="legend">
+    <span><span class="dot" style="background:#22c55e"></span>Running</span>
+    <span><span class="dot" style="background:#ef4444"></span>Downtime</span>
+  </div>
+  
+        <div class="machine-card">
+          <div class="machine-header">
+            <div class="machine-title">
+              <span class="machine-id">M1</span>
+              <span class="machine-full">M1_M560R-V-e_0712-100198</span>
+            </div>
+            <div class="eff-badge" style="background:#ef4444">
+              Efficiency: 31%
+              <span class="eff-detail">(19 / 61 min)</span>
+            </div>
+          </div>
+          <div class="section-title">⏱ Timeline</div>
+          <div style="padding:10px 20px 4px"><div class="tl-wrap" data-machine="M1" style="position:relative;height:22px;background:#f1f5f9"><div class="tl-seg" data-id="M1_0" data-tip="16:09–16:10 | WFA1.MIN" style="position:absolute;left:0.00%;width:1.67%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_1" data-tip="16:10–16:11 | Setup" style="position:absolute;left:1.67%;width:1.67%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_2" data-tip="16:11–16:15 | WFA1.MIN" style="position:absolute;left:3.33%;width:6.67%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_3" data-tip="16:15–16:16 | Setup" style="position:absolute;left:10.00%;width:1.67%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_4" data-tip="16:16–16:18 | WF861-100L-P2.MIN" style="position:absolute;left:11.67%;width:3.33%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_5" data-tip="16:18–16:20 | WFA1.MIN" style="position:absolute;left:15.00%;width:3.33%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_6" data-tip="16:20–16:22 | Setup" style="position:absolute;left:18.33%;width:3.33%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_7" data-tip="16:22–16:23 | WFA1.MIN" style="position:absolute;left:21.67%;width:1.67%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_8" data-tip="16:23–16:54 | Setup" style="position:absolute;left:23.33%;width:51.67%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_9" data-tip="16:54–16:55 | WFA1.MIN" style="position:absolute;left:75.00%;width:1.67%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_10" data-tip="16:55–16:59 | Setup" style="position:absolute;left:76.67%;width:6.67%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_11" data-tip="16:59–17:00 | WF861-100L-P2.MIN" style="position:absolute;left:83.33%;width:1.67%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_12" data-tip="17:00–17:02 | Setup" style="position:absolute;left:85.00%;width:3.33%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="M1_13" data-tip="17:02–17:09 | WFA2.MIN" style="position:absolute;left:88.33%;width:11.67%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div></div><div class="tl-ticks"><div class="tl-tick" style="left:0.0%">16:09</div><div class="tl-tick tl-tick-15" style="left:25.0%">16:24</div><div class="tl-tick" style="left:50.0%">16:39</div><div class="tl-tick tl-tick-15" style="left:75.0%">16:54</div><div class="tl-tick" style="left:100.0%">17:09</div></div></div>
+          <div class="section-title">🔄 Program Cycles (7)</div>
+          <div style="padding:0 0 4px"><div class="table-scroll-x"><div class="scroll-table-wrap"><table class="scroll-table"><thead><tr><th>#</th><th>Program</th><th>Start</th><th>End</th><th>Duration</th></tr></thead></table><div class="scroll-tbody-wrap" style="max-height:200px;overflow-y:auto"><table class="scroll-table"><tbody><tr class="tl-row" data-id="M1_0" style="cursor:pointer" title="Highlight on timeline"><td>1</td><td>WFA1.MIN</td><td>16:09</td><td>16:10</td><td><strong>1 min</strong></td></tr><tr class="tl-row" data-id="M1_2" style="cursor:pointer" title="Highlight on timeline"><td>2</td><td>WFA1.MIN</td><td>16:11</td><td>16:15</td><td><strong>4 min</strong></td></tr><tr class="tl-row" data-id="M1_4" style="cursor:pointer" title="Highlight on timeline"><td>3</td><td>WF861-100L-P2.MIN</td><td>16:16</td><td>16:20</td><td><strong>4 min</strong></td></tr><tr class="tl-row" data-id="M1_7" style="cursor:pointer" title="Highlight on timeline"><td>4</td><td>WFA1.MIN</td><td>16:22</td><td>16:23</td><td><strong>1 min</strong></td></tr><tr class="tl-row" data-id="M1_9" style="cursor:pointer" title="Highlight on timeline"><td>5</td><td>WFA1.MIN</td><td>16:54</td><td>16:55</td><td><strong>1 min</strong></td></tr><tr class="tl-row" data-id="M1_11" style="cursor:pointer" title="Highlight on timeline"><td>6</td><td>WF861-100L-P2.MIN</td><td>16:59</td><td>17:00</td><td><strong>1 min</strong></td></tr><tr class="tl-row" data-id="M1_13" style="cursor:pointer" title="Highlight on timeline"><td>7</td><td>WFA2.MIN</td><td>17:02</td><td>17:09</td><td><strong>7 min</strong></td></tr></tbody></table></div></div></div><div class="section-title" style="border-top:2px dashed #e2e8f0">📊 Average Cycle Time</div><div class="table-scroll-x"><table><thead><tr><th>Program</th><th>Count</th><th>Average</th><th>Min / Max</th></tr></thead><tbody><tr><td><em>WFA1.MIN</em></td><td>4 cycles</td><td><strong>1.8 min avg</strong></td><td>1 / 4 min</td></tr><tr><td><em>WF861-100L-P2.MIN</em></td><td>2 cycles</td><td><strong>2.5 min avg</strong></td><td>1 / 4 min</td></tr><tr><td><em>WFA2.MIN</em></td><td>1 cycles</td><td><strong>7.0 min avg</strong></td><td>7 / 7 min</td></tr></tbody></table></div></div>
+          <div class="section-title">⏸ Downtime (6) — 42 min total</div>
+          <div class="table-scroll-x"><div class="scroll-table-wrap"><table class="scroll-table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Reason</th></tr></thead></table><div class="scroll-tbody-wrap" style="max-height:200px;overflow-y:auto"><table class="scroll-table"><tbody><tr class="tl-row" data-id="M1_1" style="cursor:pointer" title="Highlight on timeline"><td>16:10</td><td>16:11</td><td><strong>1 min</strong></td><td>Setup</td></tr><tr class="tl-row" data-id="M1_3" style="cursor:pointer" title="Highlight on timeline"><td>16:15</td><td>16:16</td><td><strong>1 min</strong></td><td>Setup</td></tr><tr class="tl-row" data-id="M1_6" style="cursor:pointer" title="Highlight on timeline"><td>16:20</td><td>16:22</td><td><strong>2 min</strong></td><td>Setup</td></tr><tr class="tl-row" data-id="M1_8" style="cursor:pointer" title="Highlight on timeline"><td>16:23</td><td>16:54</td><td><strong>31 min</strong></td><td>Setup</td></tr><tr class="tl-row" data-id="M1_10" style="cursor:pointer" title="Highlight on timeline"><td>16:55</td><td>16:59</td><td><strong>4 min</strong></td><td>Setup</td></tr><tr class="tl-row" data-id="M1_12" style="cursor:pointer" title="Highlight on timeline"><td>17:00</td><td>17:02</td><td><strong>2 min</strong></td><td>Setup</td></tr></tbody></table></div></div></div>
+          
+        <div class="section-title">📈 7-Day History</div>
+        <div style="padding:12px 20px 16px">
+          <canvas id="chart_M1_M560R_V_e_0712_100198" height="80"></canvas>
+        </div>
+        <script>
+        (function(){
+          new Chart(document.getElementById("chart_M1_M560R_V_e_0712_100198").getContext("2d"),{
+            type:"bar",
+            data:{labels:["02-17"],datasets:[
+              {label:"Run (min)",data:[19],backgroundColor:"#22c55e88"},
+              {label:"Down (min)",data:[42],backgroundColor:"#ef444488"},
+              {label:"Efficiency %",data:[31.1],type:"line",borderColor:"#3b82f6",
+               backgroundColor:"transparent",yAxisID:"y2",pointRadius:4,borderWidth:2}
+            ]},
+            options:{responsive:true,interaction:{mode:"index"},
+              plugins:{legend:{position:"top"}},
+              scales:{
+                y:{title:{display:true,text:"minutes"}},
+                y2:{position:"right",min:0,max:100,
+                     title:{display:true,text:"efficiency %"},
+                     grid:{drawOnChartArea:false}}
+              }
+            }
+          });
+        })();
+        </script>
+        </div>
+        <div class="machine-card">
+          <div class="machine-header">
+            <div class="machine-title">
+              <span class="machine-id">M2</span>
+              <span class="machine-full">M2_M560R-V-e-M5V01235</span>
+            </div>
+            <div class="eff-badge" style="background:#ef4444">
+              Efficiency: 0%
+              <span class="eff-detail">(0 / 61 min)</span>
+            </div>
+          </div>
+          <div class="section-title">⏱ Timeline</div>
+          <div style="padding:10px 20px 4px"><div class="tl-wrap" data-machine="M2" style="position:relative;height:22px;background:#f1f5f9"><div class="tl-seg" data-id="M2_0" data-tip="16:09–17:09 | Idle" style="position:absolute;left:0.00%;width:100.00%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div></div><div class="tl-ticks"><div class="tl-tick" style="left:0.0%">16:09</div><div class="tl-tick tl-tick-15" style="left:25.0%">16:24</div><div class="tl-tick" style="left:50.0%">16:39</div><div class="tl-tick tl-tick-15" style="left:75.0%">16:54</div><div class="tl-tick" style="left:100.0%">17:09</div></div></div>
+          <div class="section-title">🔄 Program Cycles (0)</div>
+          <div style="padding:0 0 4px"><p class="empty">No cycles detected</p></div>
+          <div class="section-title">⏸ Downtime (1) — 61 min total</div>
+          <div class="table-scroll-x"><div class="scroll-table-wrap"><table class="scroll-table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Reason</th></tr></thead></table><div class="scroll-tbody-wrap" style="max-height:auto;overflow-y:auto"><table class="scroll-table"><tbody><tr class="tl-row" data-id="M2_0" style="cursor:pointer" title="Highlight on timeline"><td>16:09</td><td>…<span class="badge ongoing">ongoing</span></td><td><strong>60 min</strong></td><td>Idle</td></tr></tbody></table></div></div></div>
+          
+        <div class="section-title">📈 7-Day History</div>
+        <div style="padding:12px 20px 16px">
+          <canvas id="chart_M2_M560R_V_e_M5V01235" height="80"></canvas>
+        </div>
+        <script>
+        (function(){
+          new Chart(document.getElementById("chart_M2_M560R_V_e_M5V01235").getContext("2d"),{
+            type:"bar",
+            data:{labels:["02-17"],datasets:[
+              {label:"Run (min)",data:[0],backgroundColor:"#22c55e88"},
+              {label:"Down (min)",data:[61],backgroundColor:"#ef444488"},
+              {label:"Efficiency %",data:[0.0],type:"line",borderColor:"#3b82f6",
+               backgroundColor:"transparent",yAxisID:"y2",pointRadius:4,borderWidth:2}
+            ]},
+            options:{responsive:true,interaction:{mode:"index"},
+              plugins:{legend:{position:"top"}},
+              scales:{
+                y:{title:{display:true,text:"minutes"}},
+                y2:{position:"right",min:0,max:100,
+                     title:{display:true,text:"efficiency %"},
+                     grid:{drawOnChartArea:false}}
+              }
+            }
+          });
+        })();
+        </script>
+        </div>
+        <div class="machine-card">
+          <div class="machine-header">
+            <div class="machine-title">
+              <span class="machine-id">T1</span>
+              <span class="machine-full">T1_L300E-M_PEA351</span>
+            </div>
+            <div class="eff-badge" style="background:#ef4444">
+              Efficiency: 0%
+              <span class="eff-detail">(0 / 60 min)</span>
+            </div>
+          </div>
+          <div class="section-title">⏱ Timeline</div>
+          <div style="padding:10px 20px 4px"><div class="tl-wrap" data-machine="T1" style="position:relative;height:22px;background:#f1f5f9"><div class="tl-seg" data-id="T1_0" data-tip="16:09–17:09 | Power off" style="position:absolute;left:0.00%;width:100.00%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div></div><div class="tl-ticks"><div class="tl-tick" style="left:0.0%">16:09</div><div class="tl-tick tl-tick-15" style="left:25.0%">16:24</div><div class="tl-tick" style="left:50.0%">16:39</div><div class="tl-tick tl-tick-15" style="left:75.0%">16:54</div><div class="tl-tick" style="left:100.0%">17:09</div></div></div>
+          <div class="section-title">🔄 Program Cycles (0)</div>
+          <div style="padding:0 0 4px"><p class="empty">No cycles detected</p></div>
+          <div class="section-title">⏸ Downtime (1) — 60 min total</div>
+          <div class="table-scroll-x"><div class="scroll-table-wrap"><table class="scroll-table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Reason</th></tr></thead></table><div class="scroll-tbody-wrap" style="max-height:auto;overflow-y:auto"><table class="scroll-table"><tbody><tr class="tl-row" data-id="T1_0" style="cursor:pointer" title="Highlight on timeline"><td>16:09</td><td>…<span class="badge ongoing">ongoing</span></td><td><strong>59 min</strong></td><td>Power off</td></tr></tbody></table></div></div></div>
+          
+        <div class="section-title">📈 7-Day History</div>
+        <div style="padding:12px 20px 16px">
+          <canvas id="chart_T1_L300E_M_PEA351" height="80"></canvas>
+        </div>
+        <script>
+        (function(){
+          new Chart(document.getElementById("chart_T1_L300E_M_PEA351").getContext("2d"),{
+            type:"bar",
+            data:{labels:["02-17"],datasets:[
+              {label:"Run (min)",data:[0],backgroundColor:"#22c55e88"},
+              {label:"Down (min)",data:[60],backgroundColor:"#ef444488"},
+              {label:"Efficiency %",data:[0.0],type:"line",borderColor:"#3b82f6",
+               backgroundColor:"transparent",yAxisID:"y2",pointRadius:4,borderWidth:2}
+            ]},
+            options:{responsive:true,interaction:{mode:"index"},
+              plugins:{legend:{position:"top"}},
+              scales:{
+                y:{title:{display:true,text:"minutes"}},
+                y2:{position:"right",min:0,max:100,
+                     title:{display:true,text:"efficiency %"},
+                     grid:{drawOnChartArea:false}}
+              }
+            }
+          });
+        })();
+        </script>
+        </div>
+        <div class="machine-card">
+          <div class="machine-header">
+            <div class="machine-title">
+              <span class="machine-id">T2</span>
+              <span class="machine-full">T2_ L300-MYW-e_MYW197</span>
+            </div>
+            <div class="eff-badge" style="background:#22c55e">
+              Efficiency: 84%
+              <span class="eff-detail">(51 / 61 min)</span>
+            </div>
+          </div>
+          <div class="section-title">⏱ Timeline</div>
+          <div style="padding:10px 20px 4px"><div class="tl-wrap" data-machine="T2" style="position:relative;height:22px;background:#f1f5f9"><div class="tl-seg" data-id="T2_0" data-tip="16:09–16:37 | WF1401-901.MIN" style="position:absolute;left:0.00%;width:46.67%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="T2_1" data-tip="16:37–16:40 | Setup" style="position:absolute;left:46.67%;width:5.00%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="T2_2" data-tip="16:40–16:52 | WF1401-901.MIN" style="position:absolute;left:51.67%;width:20.00%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="T2_3" data-tip="16:52–16:59 | Alarm: Work counter over" style="position:absolute;left:71.67%;width:11.67%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="T2_4" data-tip="16:59–17:09 | WF1401-901.MIN" style="position:absolute;left:83.33%;width:16.67%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div></div><div class="tl-ticks"><div class="tl-tick" style="left:0.0%">16:09</div><div class="tl-tick tl-tick-15" style="left:25.0%">16:24</div><div class="tl-tick" style="left:50.0%">16:39</div><div class="tl-tick tl-tick-15" style="left:75.0%">16:54</div><div class="tl-tick" style="left:100.0%">17:09</div></div></div>
+          <div class="section-title">🔄 Program Cycles (3)</div>
+          <div style="padding:0 0 4px"><div class="table-scroll-x"><div class="scroll-table-wrap"><table class="scroll-table"><thead><tr><th>#</th><th>Program</th><th>Start</th><th>End</th><th>Duration</th></tr></thead></table><div class="scroll-tbody-wrap" style="max-height:auto;overflow-y:auto"><table class="scroll-table"><tbody><tr class="tl-row" data-id="T2_0" style="cursor:pointer" title="Highlight on timeline"><td>1</td><td>WF1401-901.MIN</td><td>16:09</td><td>16:37</td><td><strong>28 min</strong></td></tr><tr class="tl-row" data-id="T2_2" style="cursor:pointer" title="Highlight on timeline"><td>2</td><td>WF1401-901.MIN</td><td>16:40</td><td>16:52</td><td><strong>12 min</strong></td></tr><tr class="tl-row" data-id="T2_4" style="cursor:pointer" title="Highlight on timeline"><td>3</td><td>WF1401-901.MIN</td><td>16:59</td><td>… <span class="badge ongoing">in progress</span></td><td><strong>10 min</strong></td></tr></tbody></table></div></div></div><div class="section-title" style="border-top:2px dashed #e2e8f0">📊 Average Cycle Time</div><div class="table-scroll-x"><table><thead><tr><th>Program</th><th>Count</th><th>Average</th><th>Min / Max</th></tr></thead><tbody><tr><td><em>WF1401-901.MIN</em></td><td>3 cycles</td><td><strong>16.7 min avg</strong></td><td>10 / 28 min</td></tr></tbody></table></div></div>
+          <div class="section-title">⏸ Downtime (2) — 10 min total</div>
+          <div class="table-scroll-x"><div class="scroll-table-wrap"><table class="scroll-table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Reason</th></tr></thead></table><div class="scroll-tbody-wrap" style="max-height:auto;overflow-y:auto"><table class="scroll-table"><tbody><tr class="tl-row" data-id="T2_1" style="cursor:pointer" title="Highlight on timeline"><td>16:37</td><td>16:40</td><td><strong>3 min</strong></td><td>Setup</td></tr><tr class="tl-row" data-id="T2_3" style="cursor:pointer" title="Highlight on timeline"><td>16:52</td><td>16:59</td><td><strong>7 min</strong></td><td>Alarm: Work counter over</td></tr></tbody></table></div></div></div>
+          
+        <div class="section-title">📈 7-Day History</div>
+        <div style="padding:12px 20px 16px">
+          <canvas id="chart_T2__L300_MYW_e_MYW197" height="80"></canvas>
+        </div>
+        <script>
+        (function(){
+          new Chart(document.getElementById("chart_T2__L300_MYW_e_MYW197").getContext("2d"),{
+            type:"bar",
+            data:{labels:["02-17"],datasets:[
+              {label:"Run (min)",data:[51],backgroundColor:"#22c55e88"},
+              {label:"Down (min)",data:[10],backgroundColor:"#ef444488"},
+              {label:"Efficiency %",data:[83.6],type:"line",borderColor:"#3b82f6",
+               backgroundColor:"transparent",yAxisID:"y2",pointRadius:4,borderWidth:2}
+            ]},
+            options:{responsive:true,interaction:{mode:"index"},
+              plugins:{legend:{position:"top"}},
+              scales:{
+                y:{title:{display:true,text:"minutes"}},
+                y2:{position:"right",min:0,max:100,
+                     title:{display:true,text:"efficiency %"},
+                     grid:{drawOnChartArea:false}}
+              }
+            }
+          });
+        })();
+        </script>
+        </div>
+        <div class="machine-card">
+          <div class="machine-header">
+            <div class="machine-title">
+              <span class="machine-id">T3</span>
+              <span class="machine-full">T3_LB2000EXII_254633</span>
+            </div>
+            <div class="eff-badge" style="background:#22c55e">
+              Efficiency: 97%
+              <span class="eff-detail">(59 / 61 min)</span>
+            </div>
+          </div>
+          <div class="section-title">⏱ Timeline</div>
+          <div style="padding:10px 20px 4px"><div class="tl-wrap" data-machine="T3" style="position:relative;height:22px;background:#f1f5f9"><div class="tl-seg" data-id="T3_0" data-tip="16:09–16:50 | WF551-904.MIN" style="position:absolute;left:0.00%;width:68.33%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="T3_1" data-tip="16:50–16:52 | Alarm: Chuck missclamp" style="position:absolute;left:68.33%;width:3.33%;height:100%;background:#ef4444;cursor:pointer;transition:filter .15s,opacity .15s"></div><div class="tl-seg" data-id="T3_2" data-tip="16:52–17:09 | WF551-904.MIN" style="position:absolute;left:71.67%;width:28.33%;height:100%;background:#22c55e;cursor:pointer;transition:filter .15s,opacity .15s"></div></div><div class="tl-ticks"><div class="tl-tick" style="left:0.0%">16:09</div><div class="tl-tick tl-tick-15" style="left:25.0%">16:24</div><div class="tl-tick" style="left:50.0%">16:39</div><div class="tl-tick tl-tick-15" style="left:75.0%">16:54</div><div class="tl-tick" style="left:100.0%">17:09</div></div></div>
+          <div class="section-title">🔄 Program Cycles (2)</div>
+          <div style="padding:0 0 4px"><div class="table-scroll-x"><div class="scroll-table-wrap"><table class="scroll-table"><thead><tr><th>#</th><th>Program</th><th>Start</th><th>End</th><th>Duration</th></tr></thead></table><div class="scroll-tbody-wrap" style="max-height:auto;overflow-y:auto"><table class="scroll-table"><tbody><tr class="tl-row" data-id="T3_0" style="cursor:pointer" title="Highlight on timeline"><td>1</td><td>WF551-904.MIN</td><td>16:09</td><td>16:50</td><td><strong>41 min</strong></td></tr><tr class="tl-row" data-id="T3_2" style="cursor:pointer" title="Highlight on timeline"><td>2</td><td>WF551-904.MIN</td><td>16:52</td><td>… <span class="badge ongoing">in progress</span></td><td><strong>17 min</strong></td></tr></tbody></table></div></div></div><div class="section-title" style="border-top:2px dashed #e2e8f0">📊 Average Cycle Time</div><div class="table-scroll-x"><table><thead><tr><th>Program</th><th>Count</th><th>Average</th><th>Min / Max</th></tr></thead><tbody><tr><td><em>WF551-904.MIN</em></td><td>2 cycles</td><td><strong>29.0 min avg</strong></td><td>17 / 41 min</td></tr></tbody></table></div></div>
+          <div class="section-title">⏸ Downtime (1) — 2 min total</div>
+          <div class="table-scroll-x"><div class="scroll-table-wrap"><table class="scroll-table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Reason</th></tr></thead></table><div class="scroll-tbody-wrap" style="max-height:auto;overflow-y:auto"><table class="scroll-table"><tbody><tr class="tl-row" data-id="T3_1" style="cursor:pointer" title="Highlight on timeline"><td>16:50</td><td>16:52</td><td><strong>2 min</strong></td><td>Alarm: Chuck missclamp</td></tr></tbody></table></div></div></div>
+          
+        <div class="section-title">📈 7-Day History</div>
+        <div style="padding:12px 20px 16px">
+          <canvas id="chart_T3_LB2000EXII_254633" height="80"></canvas>
+        </div>
+        <script>
+        (function(){
+          new Chart(document.getElementById("chart_T3_LB2000EXII_254633").getContext("2d"),{
+            type:"bar",
+            data:{labels:["02-17"],datasets:[
+              {label:"Run (min)",data:[59],backgroundColor:"#22c55e88"},
+              {label:"Down (min)",data:[2],backgroundColor:"#ef444488"},
+              {label:"Efficiency %",data:[96.7],type:"line",borderColor:"#3b82f6",
+               backgroundColor:"transparent",yAxisID:"y2",pointRadius:4,borderWidth:2}
+            ]},
+            options:{responsive:true,interaction:{mode:"index"},
+              plugins:{legend:{position:"top"}},
+              scales:{
+                y:{title:{display:true,text:"minutes"}},
+                y2:{position:"right",min:0,max:100,
+                     title:{display:true,text:"efficiency %"},
+                     grid:{drawOnChartArea:false}}
+              }
+            }
+          });
+        })();
+        </script>
+        </div>
+</div>
+<div class="footer">Source: C:\Connectplan_raports\123.csv &nbsp;|&nbsp; DB: C:\Connectplan_raports\history.db</div>
+<div id="tl-tooltip"></div>
+<script>
+(function(){
+  var tip = document.getElementById("tl-tooltip");
+
+  // ── Tooltip + highlight при наведенні на сегмент таймлайну ────────────────
+  document.querySelectorAll(".tl-seg").forEach(function(seg){
+    seg.addEventListener("mouseenter", function(e){
+      var id  = seg.dataset.id;
+      var txt = seg.dataset.tip;
+      tip.textContent = txt;
+      tip.style.display = "block";
+      var wrap = seg.closest(".tl-wrap");
+      wrap.querySelectorAll(".tl-seg").forEach(function(s){ s.classList.add("dim"); });
+      seg.classList.remove("dim");
+      seg.classList.add("highlight");
+      if(id) document.querySelectorAll('.tl-row[data-id="'+id+'"]').forEach(function(r){
+        r.classList.add("highlight");
+      });
+    });
+    seg.addEventListener("mousemove", function(e){
+      tip.style.left = (e.clientX + 14) + "px";
+      tip.style.top  = (e.clientY - 32) + "px";
+    });
+    seg.addEventListener("mouseleave", function(){
+      tip.style.display = "none";
+      var wrap = seg.closest(".tl-wrap");
+      wrap.querySelectorAll(".tl-seg").forEach(function(s){ s.classList.remove("dim","highlight"); });
+      var id = seg.dataset.id;
+      if(id) document.querySelectorAll('.tl-row[data-id="'+id+'"]').forEach(function(r){
+        r.classList.remove("highlight");
+      });
+    });
+  });
+
+  // ── Highlight сегменту при наведенні на рядок таблиці ─────────────────────
+  document.querySelectorAll(".tl-row").forEach(function(row){
+    row.addEventListener("mouseenter", function(){
+      var id = row.dataset.id;
+      if(!id) return;
+      var seg = document.querySelector('.tl-seg[data-id="'+id+'"]');
+      if(!seg) return;
+      var wrap = seg.closest(".tl-wrap");
+      wrap.querySelectorAll(".tl-seg").forEach(function(s){ s.classList.add("dim"); });
+      seg.classList.remove("dim");
+      seg.classList.add("highlight");
+      tip.textContent = seg.dataset.tip;
+      tip.style.display = "block";
+      tip.style.left = (row.getBoundingClientRect().right + 10) + "px";
+      tip.style.top  = (row.getBoundingClientRect().top + window.scrollY) + "px";
+    });
+    row.addEventListener("mouseleave", function(){
+      var id = row.dataset.id;
+      if(!id) return;
+      var seg = document.querySelector('.tl-seg[data-id="'+id+'"]');
+      if(seg){
+        var wrap = seg.closest(".tl-wrap");
+        wrap.querySelectorAll(".tl-seg").forEach(function(s){ s.classList.remove("dim","highlight"); });
+      }
+      tip.style.display = "none";
+    });
+  });
+
+  // ── Touch support for mobile ──────────────────────────────────────────
+  document.querySelectorAll(".tl-seg").forEach(function(seg){
+    seg.addEventListener("touchstart", function(e){
+      e.preventDefault();
+      tip.textContent = seg.dataset.tip;
+      tip.style.display = "block";
+      var wrap = seg.closest(".tl-wrap");
+      wrap.querySelectorAll(".tl-seg").forEach(function(s){ s.classList.add("dim"); });
+      seg.classList.remove("dim"); seg.classList.add("highlight");
+      var id = seg.dataset.id;
+      if(id) document.querySelectorAll('.tl-row[data-id="'+id+'"]').forEach(function(r){
+        r.classList.add("highlight");
+      });
+    }, {passive:false});
+    seg.addEventListener("touchend", function(){
+      setTimeout(function(){
+        tip.style.display = "none";
+        var wrap = seg.closest(".tl-wrap");
+        wrap.querySelectorAll(".tl-seg").forEach(function(s){ s.classList.remove("dim","highlight"); });
+        var id = seg.dataset.id;
+        if(id) document.querySelectorAll('.tl-row[data-id="'+id+'"]').forEach(function(r){
+          r.classList.remove("highlight");
+        });
+      }, 1400);
+    });
+  });
+})();
+</script>
+</body>
+</html>
