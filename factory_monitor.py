@@ -35,7 +35,7 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 DOWNLOAD_DIR        = r"C:\Connectplan_raports"
 CSV_FILE            = os.path.join(DOWNLOAD_DIR, "operation_history.csv")
 MACHINING_RESULT    = os.path.join(DOWNLOAD_DIR, "machining_results.csv")
-OUTPUT_HTML         = os.path.join(DOWNLOAD_DIR, "report.html")
+OUTPUT_HTML         = os.path.join(DOWNLOAD_DIR, "index.html")
 DB_FILE             = os.path.join(DOWNLOAD_DIR, "history.db")
 LOG_FILE            = os.path.join(DOWNLOAD_DIR, "factory_monitor.log")
 URL                 = "http://192.168.1.210/csv/OutputCSVWeb.aspx?FactoryID=1&AreaID=1"
