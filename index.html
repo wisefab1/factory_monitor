@@ -1416,6 +1416,46 @@ document.addEventListener('DOMContentLoaded',function(){
     gSc.addEventListener('scroll',function(){if(_sy)return;_sy=true;pSc.scrollLeft=gSc.scrollLeft;_sy=false;});
   })();
   // ── Завантажуємо data.json і ініціалізуємо графіки ──
+  function applyGanttDelta(d) {
+    // Повертає повний gantt масив (застосовуючи дельту до localStorage кешу)
+    var mode = d.gantt_mode || 'full';
+    if(mode === 'full') {
+      var full = d.gantt || [];
+      try { localStorage.setItem('gantt_cache', JSON.stringify(full)); }
+      catch(e) { console.warn('localStorage save failed:', e); }
+      return full;
+    }
+    // DELTA mode
+    var cached = null;
+    try {
+      var raw = localStorage.getItem('gantt_cache');
+      if(raw) cached = JSON.parse(raw);
+    } catch(e) { console.warn('localStorage load failed:', e); }
+    if(!cached) {
+      console.warn('No gantt cache — delta cannot be applied. Waiting for next full sync.');
+      return [];
+    }
+    // Ключ запису
+    function gk(r) { return (r.d||'')+'|'+(r.m||'')+'|'+(r.p||'')+'|'+(r.s||''); }
+    var removed = (d.gantt_removed||[]).reduce(function(acc,k){acc[k]=1;return acc;},{});
+    var updated = {};
+    (d.gantt_updated||[]).forEach(function(r){ updated[gk(r)] = r; });
+    // 1. Фільтруємо cached: видаляємо removed, замінюємо updated
+    var merged = [];
+    cached.forEach(function(r) {
+      var k = gk(r);
+      if(removed[k]) return;
+      if(updated[k]) merged.push(updated[k]);
+      else merged.push(r);
+    });
+    // 2. Додаємо added
+    (d.gantt_added||[]).forEach(function(r) { merged.push(r); });
+    // Оновлюємо кеш
+    try { localStorage.setItem('gantt_cache', JSON.stringify(merged)); }
+    catch(e) { console.warn('localStorage save failed:', e); }
+    return merged;
+  }
+
   function loadData(){
     fetch('data.json?_='+Date.now())
       .then(function(r){return r.json();})
@@ -1431,8 +1471,9 @@ document.addEventListener('DOMContentLoaded',function(){
         if(meta) meta.innerHTML='Period: '+d.period_from+' – '+d.period_to+'<br>Generated: '+d.generated;
         // Ініціалізуємо машини
         if(window.initMachines) window.initMachines(d);
-        // Передаємо гант дані
-        if(window.setGanttData) window.setGanttData(d.gantt||[]);
+        // Застосовуємо дельту gantt і передаємо повний масив
+        var fullGantt = applyGanttDelta(d);
+        if(window.setGanttData) window.setGanttData(fullGantt);
         // Ініціалізуємо фільтр і графіки
         if(window.initMachineFilter) window.initMachineFilter();
         if(window.initToday) window.initToday();
