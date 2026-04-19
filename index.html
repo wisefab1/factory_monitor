@@ -242,7 +242,7 @@
       <span class="dot" style="background:#F44336;border-radius:2px"></span> Downtime
     </span>
   </div>
-  <div id="machine-M1" class="machine-card" style="min-height:80px"></div><div id="machine-M2" class="machine-card" style="min-height:80px"></div><div id="machine-T1" class="machine-card" style="min-height:80px"></div><div id="machine-T2" class="machine-card" style="min-height:80px"></div><div id="machine-T3" class="machine-card" style="min-height:80px"></div>
+  <div id="machine-M1" class="machine-card" style="min-height:80px"></div><div id="machine-M2" class="machine-card" style="min-height:80px"></div><div id="machine-T1" class="machine-card" style="min-height:80px"></div><div id="machine-T2" class="machine-card" style="min-height:80px"></div><div id="machine-T3" class="machine-card" style="min-height:80px"></div><div id="machine-T4" class="machine-card" style="min-height:80px"></div>
 </div>
 <div id="nav-overlay"></div>
 <button id="nav-toggle" title="Навігація">&#9776;</button>
@@ -253,6 +253,7 @@
 <a href="#machine-T1" class="nav-btn">T1</a>
 <a href="#machine-T2" class="nav-btn">T2</a>
 <a href="#machine-T3" class="nav-btn">T3</a>
+<a href="#machine-T4" class="nav-btn">T4</a>
 
 </div>
 <button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="↑">↑</button>
@@ -1102,6 +1103,7 @@ var ALL={}, HDATA={}, TEFF={}, MK=[], SK=[], COLS=[];
 // ── initMachines: рендеринг машинних карток з data.json ──────────
 window.initMachines = function(d) {
   var machines = d.machines || {};
+  var allMachines = d.all_machines || Object.keys(machines);
   var periodFrom = d.period_from || '00:00';
   var periodTo   = d.period_to   || '00:00';
   var VW = 10000, VH = 44;
@@ -1295,14 +1297,29 @@ window.initMachines = function(d) {
 
   var ticks = buildTicks(periodFrom, periodTo);
 
-  // Рендеримо кожну машину
-  Object.keys(machines).forEach(function(mname) {
-    var mdata  = machines[mname];
-    var short  = mdata.short || mname.split('_')[0];
+  // Рендеримо кожну машину (включно з тими що без активності)
+  allMachines.forEach(function(mname) {
+    var mdata  = machines[mname] || {};
+    var short  = mdata.short || (mname.indexOf('_')!==-1 ? mname.split('_')[0] : mname);
     var uid    = mname.replace(/[ \-]/g,'_');
     var eff    = mdata.eff||0;
     var el     = document.getElementById('machine-'+short);
     if(!el) return;
+
+    // Якщо машина без активності — показуємо як off-line
+    var hasData = mdata.segments && mdata.segments.length > 0;
+    if(!hasData) {
+      el.innerHTML =
+        '<div class="machine-header">'+
+          '<div class="machine-title">'+
+            '<span class="machine-id">'+short+'</span>'+
+            '<span class="machine-full">'+mname+'</span>'+
+          '</div>'+
+          '<div class="eff-badge" style="background:#94a3b8">No activity</div>'+
+        '</div>'+
+        '<div style="padding:20px;color:#94a3b8;text-align:center;font-size:0.85rem">No data for today</div>';
+      return;
+    }
 
     var tlHtml   = buildTimeline(uid, short, mdata.segments||[], mdata.markers||[]);
     var actHtml  = buildActivityTable(mname, uid, mdata);
@@ -1350,15 +1367,14 @@ window.initMachines = function(d) {
     })();
   });
 
-  // Nav sidebar — оновлюємо кнопки
+  // Nav sidebar — оновлюємо кнопки (для всіх машин з конфігу)
   (function() {
     var nav = document.getElementById('nav-sidebar');
     if(!nav) return;
-    var sep = nav.querySelector('[style*="border-top"]');
     // Прибираємо старі machine кнопки
     nav.querySelectorAll('a.nav-btn').forEach(function(a){ a.remove(); });
-    Object.keys(machines).forEach(function(mname) {
-      var short = (machines[mname]||{}).short || mname.split('_')[0];
+    allMachines.forEach(function(mname) {
+      var short = (machines[mname]||{}).short || (mname.indexOf('_')!==-1 ? mname.split('_')[0] : mname);
       var a = document.createElement('a');
       a.href = '#machine-'+short;
       a.className = 'nav-btn';
